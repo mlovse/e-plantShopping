@@ -245,6 +245,10 @@ function ProductList({ onHomeClick }) {
         onHomeClick();
     };
 
+    // Get the total number of items in the cart from Redux store
+    const cartItems = useSelector((state) => state.cart.items);
+    const totalCartCount = cartItems.reduce((total, item) => total + (item.quantity || 0), 0);
+
     const handleCartClick = (e) => {
         e.preventDefault();
         setShowCart(true); // Set showCart to true when cart icon is clicked
@@ -258,10 +262,13 @@ function ProductList({ onHomeClick }) {
     const handleContinueShopping = (e) => {
         e.preventDefault();
         setShowCart(false);
+        setShowPlants(true)
     };
 
     const handleAddToCart = (plant) => {
-        dispatch(addItem(plant));
+        // Convert cost to a number before dispatching
+        const costNumber = parseFloat(plant.cost.replace('$', ''));
+        dispatch(addItem({ ...plant, cost: costNumber }));
 
         setAddedToCart((prev) => ({
             ...prev,
@@ -283,34 +290,77 @@ function ProductList({ onHomeClick }) {
                             </div>
                         </a>
                     </div>
-
                 </div>
                 <div style={styleObjUl}>
-                    <div> <a href="#" onClick={(e) => handlePlantsClick(e)} style={styleA}>Plants</a></div>
-                    <div> <a href="#" onClick={(e) => handleCartClick(e)} style={styleA}><h1 className='cart'><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" id="IconChangeColor" height="68" width="68"><rect width="156" height="156" fill="none"></rect><circle cx="80" cy="216" r="12"></circle><circle cx="184" cy="216" r="12"></circle><path d="M42.3,72H221.7l-26.4,92.4A15.9,15.9,0,0,1,179.9,176H84.1a15.9,15.9,0,0,1-15.4-11.6L32.5,37.8A8,8,0,0,0,24.8,32H8" fill="none" stroke="#faf9f9" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" id="mainIconPathAttribute"></path></svg></h1></a></div>
+                    <div>
+                        <a href="#" onClick={(e) => handlePlantsClick(e)} style={styleA}>Plants</a>
+                    </div>
+                    <div style={{ position: 'relative' }}>
+                        <a href="#" onClick={(e) => handleCartClick(e)} style={styleA}>
+                            <h1 className='cart' style={{ margin: 0, position: 'relative' }}>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" id="IconChangeColor" height="68" width="68">
+                                    <rect width="156" height="156" fill="none"></rect>
+                                    <circle cx="80" cy="216" r="12"></circle>
+                                    <circle cx="184" cy="216" r="12"></circle>
+                                    <path d="M42.3,72H221.7l-26.4,92.4A15.9,15.9,0,0,1,179.9,176H84.1a15.9,15.9,0,0,1-15.4-11.6L32.5,37.8A8,8,0,0,0,24.8,32H8" fill="none" stroke="#faf9f9" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" id="mainIconPathAttribute"></path>
+                                </svg>
+                                {totalCartCount > 0 && (
+                                    <span
+                                        style={{
+                                            position: 'absolute',
+                                            top: '8px',
+                                            right: '8px',
+                                            background: 'white',
+                                            color: 'red',
+                                            borderRadius: '50%',
+                                            width: '28px',
+                                            height: '28px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '18px',
+                                            fontWeight: 'bold',
+                                            zIndex: 2,
+                                        }}
+                                    >
+                                        {totalCartCount}
+                                    </span>
+                                )}
+                            </h1>
+                        </a>
+                    </div>
                 </div>
             </div>
             {!showCart ? (
                 <div className="product-grid">
-{plantsArray.map((category, index) => (
-                    <div key={index} className="product-category">
-                        <h1>{category.category}</h1>
-                        <div className="product-list">
-                            {category.plants.map((plant, plantIndex) => (
-                                <div className='product-card' key={plantIndex}>
-                                    <img className='product-image' src={plant.image} alt={plant.name} />
-                                    <div className='product-title'>{plant.name}</div>
-                                    <div className='product-description'>{plant.description}</div>
-                                    <div className="product=cost">{plant.cost}</div>
-                                <button className='product-button'
-                                onClick={() => handleAddToCart(plant)}
-                                >Add to Cart</button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                ))}
+                    {plantsArray.map((category, index) => (
+                        <div key={index} className="product-category">
+                            <h1>{category.category}</h1>
+                            <div className="product-list">
+                                {category.plants.map((plant, plantIndex) => {
+                                    // Check if this plant is already in the cart
+                                    const isInCart = cartItems.some(item => item.name === plant.name);
 
+                                    return (
+                                        <div className='product-card' key={plantIndex}>
+                                            <img className='product-image' src={plant.image} alt={plant.name} />
+                                            <div className='product-title'>{plant.name}</div>
+                                            <div className='product-description'>{plant.description}</div>
+                                            <div className="product=cost">{plant.cost}</div>
+                                            <button
+                                                className='product-button'
+                                                onClick={() => handleAddToCart(plant)}
+                                                disabled={isInCart}
+                                                style={isInCart ? { backgroundColor: '#ccc', cursor: 'not-allowed' } : {}}
+                                            >
+                                                {isInCart ? 'In Cart' : 'Add to Cart'}
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             ) : (
                 <CartItem onContinueShopping={handleContinueShopping} />
